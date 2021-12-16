@@ -1,6 +1,7 @@
+require 'csv'
+
 class LanternFish
   def initialize(timer_val, world)
-    puts "timer_val: #{timer_val}"
     self.timer = timer_val
     self.world = world
   end
@@ -12,7 +13,14 @@ class LanternFish
   def tick
     breed if should_breed?
 
-    self.timer = (self.timer - 1) % breed_cycle
+    self.timer = case timer
+                 when 8
+                   7
+                 when 7
+                   6
+                 else
+                   (timer - 1) % breed_cycle
+                 end
   end
 
   private
@@ -49,21 +57,27 @@ class World
   end
 
   def tick
-    pool.each(&:tick)
+    pool.size.times do |index|
+      fish = pool[index]
+      fish.tick
+    end
     self.day += 1
     print_state
   end
 
+  attr_accessor :pool
+
   private
 
-  attr_accessor :pool, :day
+  attr_accessor :day
 
   def print_state
-    puts "After day #{day}: #{pool.join(",")}"
+    puts "After day #{day.to_s.rjust(2)}"
+    #puts "After day #{day.to_s.rjust(2)}: #{pool.join(",")}"
   end
 
   def input
-    [3,4,3,1,2]
+    @input ||= CSV.new(File.open('sample.csv'), converters: %i[numeric]).read.flatten
   end
 
   def feed_input
@@ -71,6 +85,10 @@ class World
   end
 end
 
+
+n_days = 80
 world = World.new
 puts "==="
-2.times { world.tick }
+n_days.times { world.tick }
+
+puts "After #{n_days} days, the fish population is #{world.pool.length}"
